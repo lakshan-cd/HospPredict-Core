@@ -4,6 +4,9 @@ import os
 import yaml
 import pandas as pd
 from neo4j import GraphDatabase
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def load_config():
     cfg_path = os.path.join(
@@ -15,8 +18,8 @@ def load_config():
 
 def get_driver(cfg):
     return GraphDatabase.driver(
-        cfg['neo4j']['uri'],
-        auth=(cfg['neo4j']['user'], cfg['neo4j']['password'])
+        os.getenv('NEO4J_URI'),
+        auth=(os.getenv('NEO4J_USER'), os.getenv('NEO4J_PASSWORD'))
     )
 
 def clear_existing_data(session):

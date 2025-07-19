@@ -1,15 +1,25 @@
 #!/usr/bin/env python3
 import yaml, os
 from neo4j import GraphDatabase
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def load_config():
     path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'default.yml')
     return yaml.safe_load(open(path))
 
 def main():
+    neo4j_uri = os.getenv('NEO4J_URI')
+    neo4j_user = os.getenv('NEO4J_USER')
+    neo4j_password = os.getenv('NEO4J_PASSWORD')
+    
+    # Validate environment variables
+    if not neo4j_uri or not neo4j_user or not neo4j_password:
+        raise ValueError("Missing required environment variables: NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD")
+    
     cfg = load_config()
-    driver = GraphDatabase.driver(cfg['neo4j']['uri'],
-                                  auth=(cfg['neo4j']['user'], cfg['neo4j']['password']))
+    driver = GraphDatabase.driver(neo4j_uri, auth=(neo4j_user, neo4j_password))
     with driver.session() as sess:
         # Clear existing data first
         sess.run("""

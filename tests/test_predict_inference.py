@@ -1,6 +1,8 @@
 import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from dotenv import load_dotenv
+load_dotenv()
 
 import yaml
 import torch
@@ -18,8 +20,8 @@ with open(cfg_path, "r") as f:
 # --- Neo4j connection ---
 neo4j_cfg = cfg['neo4j']
 driver = GraphDatabase.driver(
-    neo4j_cfg['uri'],
-    auth=(neo4j_cfg['user'], neo4j_cfg['password'])
+    os.getenv('NEO4J_URI'),
+    auth=(os.getenv('NEO4J_USER'), os.getenv('NEO4J_PASSWORD'))
 )
 
 # --- Wide features ---

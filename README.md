@@ -41,6 +41,8 @@ etl_preprocessing_project/
 
 ## Setup
 
+### 1. Environment Setup
+
 ```bash
 # Create a virtual environment
 python -m venv venv
@@ -54,6 +56,50 @@ source venv/bin/activate
 # Install dependencies
 pip install -r requirements.txt
 ```
+
+### 2. Environment Variables
+
+Create a `.env` file in the project root with your configuration:
+
+```bash
+# Option 1: Use the setup script (recommended)
+python setup_env.py
+
+# Option 2: Copy manually
+cp .env.example .env
+
+# Edit the .env file with your actual values
+```
+
+Required environment variables in `.env`:
+```env
+# Neo4j Database Configuration
+NEO4J_URI=your_neo4j_uri_here
+NEO4J_USER=your_neo4j_username
+NEO4J_PASSWORD=your_neo4j_password
+
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+DEBUG=False
+```
+
+**⚠️ Security Note:** Never commit your `.env` file to version control. It contains sensitive information like database passwords.
+
+### 3. Running the API
+
+```bash
+# Run the FastAPI application
+python main.py
+
+# Or using uvicorn directly
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+The API will be available at:
+- **Main API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
+- **Health Check**: http://localhost:8000/health
 
 ## Clearing Data
 
@@ -95,7 +141,7 @@ Follow these steps to run the entire pipeline from preprocessing to dynamic rela
 
 2. **Configure Neo4j**
    - Ensure your Neo4j instance is running
-   - Verify Neo4j connection details in `config/default.yml`
+   - Verify Neo4j connection details in your `.env` file
    - Make sure APOC plugin is installed in your Neo4j instance
 
 3. **Run Data Preprocessing**
@@ -142,13 +188,13 @@ LIMIT 5;
 ## Troubleshooting
 
 1. If you encounter Neo4j connection issues:
-   - Verify your Neo4j credentials in `config/default.yml`
+   - Verify your Neo4j credentials in `.env` file
    - Ensure Neo4j instance is running
    - Check if APOC plugin is installed
 
 2. If preprocessing fails:
    - Check raw data format in `data/raw/`
-   - Verify file paths in `config/default.yml`
+   - Verify file paths in `config/default.yml` or environment variables
    - Ensure all required Python packages are installed
 
 3. If dynamic relationships fail:

@@ -136,6 +136,9 @@ import pandas as pd
 import numpy as np
 from neo4j import GraphDatabase
 from torch_geometric.data import HeteroData
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # ——— Load config ———
 cfg_path = os.path.abspath(os.path.join(
@@ -146,8 +149,8 @@ cfg = yaml.safe_load(open(cfg_path))
 
 # ——— Neo4j driver ———
 driver = GraphDatabase.driver(
-    cfg['neo4j']['uri'],
-    auth=(cfg['neo4j']['user'], cfg['neo4j']['password'])
+    os.getenv('NEO4J_URI'),
+    auth=(os.getenv('NEO4J_USER'), os.getenv('NEO4J_PASSWORD'))
 )
 
 # ——— Load labels.csv ———
