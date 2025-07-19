@@ -1,0 +1,22 @@
+data:
+  raw:
+    financial: data/raw/financialdata
+    trades: data/raw/tradesdata
+  processed:
+    financial: data/processed/financial
+    trades: data/processed/trades
+    merged: data/processed/merged
+    graph_data: data/forGNN
+    quarter_graphs: data/forGNN/quarter_graphs
+    
+  labels:
+    source_dir: data/processed/merged
+    out_csv:    data/labels/labels.csv 
+     
+  features:
+    wide_csv: data/forGNN/features_wide.csv  
+
+neo4j:
+  uri:      "neo4j+s://57bfad6e.databases.neo4j.io"
+  user:     "neo4j"
+  password: "5dnYfqaigHdPFVFcOeUuZUcwxLMs0WMuOvSmUQFIRUk"    
