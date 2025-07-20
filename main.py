@@ -1,10 +1,10 @@
 # main.py
 from fastapi import FastAPI
 from routes.predict import router as predict_router
-from src.config import settings
+# from src.config import settings
 
-# Validate environment variables on startup
-settings.validate()
+# # Validate environment variables on startup
+# settings.validate()
 
 app = FastAPI(
     title="Hotel Financial Risk Predictive API",
