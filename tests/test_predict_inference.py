@@ -25,7 +25,7 @@ driver = GraphDatabase.driver(
 )
 
 # --- Wide features ---
-features_csv = cfg['data']['features']['wide_csv']
+features_csv = cfg['data']['features']['feature_wide_edited']
 feat_map, feat_cols = load_feat_map(features_csv)
 
 # --- Model/scaler paths ---
@@ -35,7 +35,7 @@ SCALER_PATH = "models/scaler/tabular_scaler.joblib"
 
 # --- Query parameters ---
 company_id = "Ceylon_Hotels_Corporation_PLC"
-period = "2022-12-31"
+period = "2024-12-31"
 gid = f"{company_id}_{period}"
 
 # --- Load a graph ---
