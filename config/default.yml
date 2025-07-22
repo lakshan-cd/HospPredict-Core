@@ -14,7 +14,8 @@ data:
     out_csv:    data/labels/labels.csv 
      
   features:
-    wide_csv: data/forGNN/features_wide.csv  
+    wide_csv: data/forGNN/features_wide.csv
+    feature_wide_edited: data/feature_wide/features_wide.csv
 
 neo4j:
   uri:      ${NEO4J_URI}
