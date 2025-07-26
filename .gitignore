@@ -246,3 +246,5 @@ Thumbs.db
 !main.py
 !requirements.txt
 !README.md 
+
+data/news/*/*.csv
