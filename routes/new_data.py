@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
 import pandas as pd
@@ -8,6 +8,7 @@ import os
 import sys
 import base64
 import io
+from neo4j import GraphDatabase
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from src.preprocessing.new_data import (
@@ -47,6 +48,10 @@ class NewDataRequest(BaseModel):
     company_id: str
     period: str  # YYYY-MM-DD format
     occupancy_drop: Optional[float] = None
+
+class PredictRequest(BaseModel):
+    company_id: str
+    period: str
 
 @router.post("/predict-new-data")
 async def predict_new_data(request: NewDataRequest):
@@ -237,3 +242,71 @@ async def predict_new_data(request: NewDataRequest):
         if 'trade_path' in locals():
             os.unlink(trade_path)
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/predict-risk")
+async def predict_risk(request: PredictRequest):
+    # Load config
+    cfg_path = os.path.join("config", "default.yml")
+    with open(cfg_path, "r") as f:
+        cfg = yaml.safe_load(f)
+    features_csv = cfg['data']['features']['feature_wide_edited']
+    feat_map, feat_cols = load_feat_map(features_csv)
+    GNN_PATH = "models/best_gnn_v4.pth"
+    RF_PATH = "models/rf_gnn_ensemble.joblib"
+    SCALER_PATH = "models/scaler/tabular_scaler.joblib"
+    gid = f"{request.company_id}_{request.period}"
+
+    # Load a graph
+    # For Neo4j connection, use config or env as in test
+    neo4j_cfg = cfg['neo4j']
+
+    driver = GraphDatabase.driver(
+        os.getenv('NEO4J_URI', neo4j_cfg.get('uri', 'bolt://localhost:7687')),
+        auth=(os.getenv('NEO4J_USER', neo4j_cfg.get('user', 'neo4j')), os.getenv('NEO4J_PASSWORD', neo4j_cfg.get('password', 'password')))
+    )
+    graph = fetch_hotel_graph(driver, request.company_id, request.period, feat_map, feat_cols)
+
+    # Model input dims
+    in_fm = graph['FinancialMetric'].x.shape[1]
+    in_sm = graph['StockMetric'].x.shape[1]
+    in_tp = 32  # Should match training
+    in_gf = graph['GraphFeature'].x.shape[1]
+
+    # Load models
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    gnn = load_gnn_model(GNN_PATH, in_fm, in_sm, in_tp, in_gf, device=device)
+    rf = load_rf_model(RF_PATH)
+    scaler = load_scaler(SCALER_PATH)
+
+    # Prepare period embedding
+    num_T = len(graph['TimePeriod'].periods)
+    period_emb = torch.nn.Embedding(num_T, in_tp).to(device)
+    graph = graph.to(device)
+
+    # Wide features for this graph
+    if gid not in feat_map:
+        raise HTTPException(status_code=404, detail=f"Features not found for {gid}")
+    wide = feat_map[gid].copy()
+
+    # Standard prediction
+    with torch.no_grad():
+        period_vol = compute_period_vol(graph)
+        emb = gnn._embed(graph, period_vol, period_emb).cpu().numpy()
+    wide_scaled = scaler.transform([wide])
+    X = np.hstack([wide_scaled[0], emb])
+    prob = rf.predict_proba([X])[0, 1]
+
+    wide_orig = wide.copy()
+
+    # Top N most influential financial metrics (by RF importance)
+    importances = rf.feature_importances_[:len(feat_cols)]
+    TOP_N = 10
+    top_idx = np.argsort(importances)[::-1][:TOP_N]
+    top_features = [(feat_cols[i], importances[i]) for i in top_idx]
+    top_feature_values = {feat: float(wide_orig[feat_cols.index(feat)]) for feat, _ in top_features}
+    top_influential_features = [
+        {"feature": feat, "importance": float(imp), "value": top_feature_values[feat]}
+        for feat, imp in top_features
+    ]
+
+    return {"company_id": request.company_id, "period": request.period, "predicted_risk": float(prob), "top_influential_features": top_influential_features}
