@@ -189,6 +189,8 @@ data/processed/trades/*.csv
 # Raw data files (original datasets - too large for git)
 data/raw/financialdata/*/*.csv
 data/raw/tradesdata/*/*.csv
+data/macro-economic/*
+data/news/*
 
 # Trained models (too large for git)
 models/*.pth
@@ -246,3 +248,5 @@ Thumbs.db
 !main.py
 !requirements.txt
 !README.md 
+
+models/macro-economic/models/*
