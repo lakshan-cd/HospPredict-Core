@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 import joblib
 from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Model, load_model
-from tensorflow.keras.layers import Input, LSTM, Dense, Concatenate
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping
+from keras.models import Model, load_model
+from keras.layers import Input, LSTM, Dense, Concatenate
+from keras.optimizers import Adam
+from keras.callbacks import EarlyStopping
 from sklearn.metrics import mean_squared_error, mean_absolute_error
 import matplotlib.pyplot as plt
 import seaborn as sns
