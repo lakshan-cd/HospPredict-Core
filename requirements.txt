@@ -1,7 +1,10 @@
 pandas
-numpy
 pyyaml
 neo4j>=4.0.0
 python-dotenv
 fastapi
 uvicorn
+torch
+torch-geometric
+numpy>=1.25.0,<2.0.0
+

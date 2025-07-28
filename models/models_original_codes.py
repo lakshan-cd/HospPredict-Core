@@ -191,7 +191,7 @@ class HeteroSAGENet(nn.Module):
     def __init__(self, in_fm, in_sm, in_tp, in_gf, hidden=128, dropout=0.5):
         super().__init__()
         self.hidden = hidden                                    # <<< store hidden dim
-        self.conv = HeteroConv({
+        self.conv = HeteroConv({                                #Processes the heterogeneous knowledge graph with different node types and relationships.
             ('FinancialMetric','QoQ_CHANGE','FinancialMetric'): SAGEConv(in_fm, hidden),
             ('FinancialMetric','BELONGS_TO_PERIOD','TimePeriod'): SAGEConv((in_fm,in_tp), hidden),
             ('TimePeriod','CRITICAL_PERIOD','FinancialMetric'): SAGEConv((in_tp,in_fm), hidden),
@@ -209,6 +209,7 @@ class HeteroSAGENet(nn.Module):
             nn.Linear(hidden//2,1)
         )
 
+    # Sets up feature dictionaries for each node type and edge types
     def forward(self, data, period_vol):
         T = data['TimePeriod'].num_nodes
         pe = period_emb(torch.arange(T, device=period_vol.device)) * period_vol
@@ -227,6 +228,7 @@ class HeteroSAGENet(nn.Module):
             ('TimePeriod','rev_BELONGS','FinancialMetric'),
         ]}
 
+        # Applies the hetero convolution to the feature dictionaries ←→
         out = self.conv(x, edges)
         fm = F.relu(self.norm['FinancialMetric'](out['FinancialMetric']))
         tp = F.relu(self.norm['TimePeriod'](out['TimePeriod']))
@@ -335,8 +337,8 @@ class HeteroFTAGNN_v3(nn.Module):
         # save the list of relation‐types for later
         self.rel_keys = list(rel_convs.keys())
 
-        # 2) pass that same mapping into both layers:
-        self.conv1 = HeteroConv(rel_convs, aggr='sum')
+        # 2) pass that same mapping into both layers: two layers of GAT first output is used as input for the second layer
+        self.conv1 = HeteroConv(rel_convs, aggr='sum') 
         self.conv2 = HeteroConv({
             etype: GATConv(hidden, hidden//heads, heads=heads,
                            dropout=dropout, add_self_loops=False)
@@ -360,6 +362,7 @@ class HeteroFTAGNN_v3(nn.Module):
         h = self._embed(data, period_vol)
         return self.head(h).squeeze(), None, None
 
+    # 1) Prepare Input Features
     def _embed(self, data, period_vol):
         T,dev = data['TimePeriod'].num_nodes, data['FinancialMetric'].x.device
         pe = period_emb(torch.arange(T,device=dev)); pe=torch.nan_to_num(pe)
@@ -368,17 +371,18 @@ class HeteroFTAGNN_v3(nn.Module):
             'TimePeriod'     : pe,
             'StockMetric'    : data['StockMetric'].x,
         }
+        #Prepare Edge Indices
         def ei(rel):
             return data[rel].edge_index if rel in data.edge_types else torch.zeros((2,0),dtype=torch.long,device=dev)
         edges = {etype: ei(etype) for etype in self.rel_keys}
 
-        out1 = self.conv1(x, edges)
+        out1 = self.conv1(x, edges) #Apply first GAT layer
         fm1 = F.elu(self.ln['FinancialMetric'](out1['FinancialMetric']))
         tp1 = F.elu(self.ln['TimePeriod'](out1['TimePeriod']))
         sm1 = F.elu(self.ln['StockMetric'](out1['StockMetric']))
 
-        out2 = self.conv2({'FinancialMetric':fm1,'TimePeriod':tp1,'StockMetric':sm1}, edges)
-        fm2 = F.elu(self.ln['FinancialMetric'](out2['FinancialMetric'] + fm1))
+        out2 = self.conv2({'FinancialMetric':fm1,'TimePeriod':tp1,'StockMetric':sm1}, edges) #Apply second GAT layer
+        fm2 = F.elu(self.ln['FinancialMetric'](out2['FinancialMetric'] + fm1)) #Residual connections: Add Layer 1 output to Layer 2 output
         tp2 = F.elu(self.ln['TimePeriod'](out2['TimePeriod']    + tp1))
         sm2 = F.elu(self.ln['StockMetric'](out2['StockMetric']  + sm1))
 
@@ -386,7 +390,7 @@ class HeteroFTAGNN_v3(nn.Module):
         local_vec,_  = self.local_att(fm2)
         sm_pool      = sm2.mean(dim=0) if sm2.size(0)>0 else torch.zeros(self.hidden,device=dev)
         gf           = data['GraphFeature'].x.squeeze(0)
-        return torch.cat([local_vec,global_vec,sm_pool,gf],dim=-1)
+        return torch.cat([local_vec,global_vec,sm_pool,gf],dim=-1) #Concatenate all embeddings vector
 
 # ──────────── Setup Logging ─────────────
 logging.basicConfig(format='%(asctime)s %(levelname)s: %(message)s',

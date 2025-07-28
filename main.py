@@ -4,6 +4,7 @@ from routes.predict import router as predict_router
 from routes.new_data import router as new_data_router
 from routes.company_data import router as company_data_router
 from routes.knowledge_graph import router as knowledge_graph_router
+from routes.macro_economic import router as macro_economic_router
 # from src.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -29,6 +30,7 @@ app.include_router(predict_router, prefix="/api/v1", tags=["predictions"])
 app.include_router(new_data_router, prefix="/api/v1", tags=["new-data"])
 app.include_router(company_data_router, prefix="/api/v1", tags=["company-data"])
 app.include_router(knowledge_graph_router, prefix="/api/v1", tags=["knowledge-graph"])
+app.include_router(macro_economic_router, prefix="/api/v1", tags=["macro-economic"])
 
 @app.get("/")
 def root():
