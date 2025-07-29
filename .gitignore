@@ -252,3 +252,4 @@ Thumbs.db
 
 data/news/*/*.csv
 models/macro-economic/models/*
+models/news/models/*
