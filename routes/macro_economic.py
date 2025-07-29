@@ -10,7 +10,7 @@ import json
 import tensorflow as tf
 from datetime import datetime, timedelta
 
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 from sklearn.preprocessing import MinMaxScaler
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -154,9 +154,21 @@ class MacroEconomicAPI:
             prediction_scaled = model.predict([latest_stock, latest_macro])
             prediction = float(stock_scaler.inverse_transform(prediction_scaled.reshape(-1, 1)).flatten()[0])
             
-            # Get current price for comparison
-            current_price_scaled = X_stock[-1, -1, 0]
-            current_price = float(stock_scaler.inverse_transform([[current_price_scaled]])[0, 0])
+            # Get current price for comparison (use the last actual price from training data)
+            # Load performance data to get the correct current price
+            performance_path = os.path.join(OUTPUT_DIR, f"{company_name}_forecast_vs_actual.csv")
+            if os.path.exists(performance_path):
+                try:
+                    performance_df = pd.read_csv(performance_path)
+                    current_price = float(performance_df['Actual Price'].iloc[-1])
+                except:
+                    # Fallback to sequence-based calculation
+                    current_price_scaled = X_stock[-1, -1, 0]
+                    current_price = float(stock_scaler.inverse_transform([[current_price_scaled]])[0, 0])
+            else:
+                # Fallback to sequence-based calculation
+                current_price_scaled = X_stock[-1, -1, 0]
+                current_price = float(stock_scaler.inverse_transform([[current_price_scaled]])[0, 0])
             
             return {
                 "company_name": company_name,
