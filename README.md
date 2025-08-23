@@ -1,9 +1,10 @@
+## Python 10 , virtual env also python 10
+
 # ETL Preprocessing Project
 
 This project contains the preprocessing pipeline for financial reports and trade data, including dynamic relationship generation in Neo4j.
 
 ## Structure
-
 ```
 etl_preprocessing_project/
 │
